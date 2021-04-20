@@ -32,7 +32,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
@@ -268,6 +270,24 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Log.d("IO ","Crashed");
         }
 
+    }
+
+    public void SaveYUVImage(Image img) throws Exception {
+        try {
+            byte[] data = null;
+            int format =0;
+            int width = 640;
+            int height = 480;
+            //YuvImage image = new YuvImage(data, format, width, height, null);
+            //String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+
+            //File file = new File(imageStorageDir.getPath() + File.separator + "IMG_" + timeStamp + ".jpeg");
+            //FileOutputStream fileOut = new FileOutputStream(file);
+            //image.compressToJpeg(new Rect(0, 0, image.getWidth(), image.getHeight()), 90,
+             //       fileOut);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static int[] YUVtoRGB(float y, float u, float v){
