@@ -1,5 +1,6 @@
 package arnavigation;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
@@ -46,11 +47,19 @@ public class Home extends AppCompatActivity implements View.OnClickListener, Pop
         ImageButton apartment30Btn = findViewById(R.id.apartment30Btn);
         ImageButton packenhamHouseBtn = findViewById(R.id.packenhamhouseBtn);
         ImageButton fireExitBtn = findViewById(R.id.fireexitBtn);
+
+
+
+
+
         // Initilizing on click listeners for all buttons
         apartment18Btn.setOnClickListener(this);
         apartment30Btn.setOnClickListener(this);
+
         packenhamHouseBtn.setOnClickListener(this);
         fireExitBtn.setOnClickListener(this);
+
+
     }
 
     @Override

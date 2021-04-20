@@ -3,6 +3,11 @@ package arnavigation;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,6 +17,9 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Camera;
+import com.google.ar.core.Frame;
+import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
@@ -19,6 +27,11 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
 import com.ustglobal.arcloudanchors.R;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
@@ -41,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private String PACKENHAMHOUSE = "packenhamHouse_DB";
     private String FIREEXIT = "fireExit_DB";
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,6 +73,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Context of the entire application is passed on to TinyDB
         Storage storage = new Storage(getApplicationContext());
         Button resolve = findViewById(R.id.resolve);
+
+        //add
+        Button photo = findViewById(R.id.photo);
 
         arFragment = (CloudAnchorFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
         // This part of the code will be executed when the user taps on a plane
@@ -131,6 +148,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 create3DModel(resolvedAnchor);
             }
         });
+
+
+        photo.setOnClickListener(view->{
+            getCamera();
+        });
     }
 
     private void showToast(String s) {
@@ -180,5 +202,86 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
 
+    }
+
+    public void getCamera(){
+        String tag = "ArCore";
+        String msg = "Not Yet";
+        Frame frame= arFragment.getArSceneView().getArFrame();
+        Camera camera = frame.getCamera();
+
+        try  {
+            Image image = frame.acquireCameraImage();
+
+            Log.d(image.getHeight()+"-->height ",image.getWidth()+"-->width ");
+
+            WriteImageToSD(image);
+            Log.d("save image","success AR.jpg");
+        }
+        catch (NotYetAvailableException e)
+        {
+            Log.d(tag,msg);
+        }
+    }
+
+    private void WriteImageToSD(Image img)
+    {
+        File root=getExternalFilesDir(null).getAbsoluteFile();
+        File path=new File(root.getAbsolutePath()+"/AR");
+        if(path.exists()==false)
+        {
+            path.mkdir();
+        }
+        File imgFile=new File(path,String.format("AR_%d.jpg",img.getTimestamp()));
+
+        try(FileOutputStream out=new FileOutputStream(imgFile)){
+            byte[] nv21;
+            ByteBuffer yBuffer = img.getPlanes()[0].getBuffer();
+            ByteBuffer uBuffer = img.getPlanes()[1].getBuffer();
+            ByteBuffer vBuffer = img.getPlanes()[2].getBuffer();
+
+
+
+
+
+
+
+            //此方法返回此緩衝區中剩餘的元素數 .remaining()
+            int ySize = yBuffer.remaining() ;
+            int uSize = uBuffer.remaining();
+            int vSize = vBuffer.remaining();
+
+            nv21 = new byte[ySize + uSize + vSize];
+
+            //U and V are swapped
+            yBuffer.get(nv21, 0, ySize);
+            vBuffer.get(nv21, ySize, vSize);
+            uBuffer.get(nv21, ySize + vSize, uSize);
+
+            YuvImage yuv=new YuvImage(nv21, ImageFormat.NV21,img.getWidth(),img.getHeight(),null);
+
+            yuv.compressToJpeg(new Rect(0,0,img.getWidth(),img.getHeight()),100,out);
+
+        } catch (FileNotFoundException e) {
+        Log.d("File not found","LOL");
+        } catch (IOException e) {
+            Log.d("IO ","Crashed");
+        }
+
+    }
+
+    public static int[] YUVtoRGB(float y, float u, float v){
+        int[] rgb = new int[3];
+        float r,g,b;
+
+        r = (float)((y + 0.000 * u + 1.140 * v) * 255);
+        g = (float)((y - 0.396 * u - 0.581 * v) * 255);
+        b = (float)((y + 2.029 * u + 0.000 * v) * 255);
+
+        rgb[0] = (int)r;
+        rgb[1] = (int)g;
+        rgb[2] = (int)b;
+
+        return rgb;
     }
 }
