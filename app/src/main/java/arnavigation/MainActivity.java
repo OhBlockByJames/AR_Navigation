@@ -4,7 +4,9 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.media.Image;
@@ -27,6 +29,7 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
 import com.ustglobal.arcloudanchors.R;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -214,11 +217,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         try  {
             Image image = frame.acquireCameraImage();
-
             Log.d(image.getHeight()+"-->height ",image.getWidth()+"-->width ");
+            YuvImage yuv = transImage(image);
 
+            //frame.getImageMetadata().getByteArray()
             WriteImageToSD(image);
-            Log.d("save image","success AR.jpg");
+            Bitmap RGB = convertYuvImageToRgb(yuv,image.getHeight(),image.getWidth(),1);
+
+            Log.d("save image",""+RGB.getHeight()+RGB.getWidth());
         }
         catch (NotYetAvailableException e)
         {
@@ -241,29 +247,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ByteBuffer yBuffer = img.getPlanes()[0].getBuffer();
             ByteBuffer uBuffer = img.getPlanes()[1].getBuffer();
             ByteBuffer vBuffer = img.getPlanes()[2].getBuffer();
-
-
-
-
-
-
-
             //此方法返回此緩衝區中剩餘的元素數 .remaining()
             int ySize = yBuffer.remaining() ;
             int uSize = uBuffer.remaining();
             int vSize = vBuffer.remaining();
-
             nv21 = new byte[ySize + uSize + vSize];
-
             //U and V are swapped
             yBuffer.get(nv21, 0, ySize);
             vBuffer.get(nv21, ySize, vSize);
             uBuffer.get(nv21, ySize + vSize, uSize);
-
             YuvImage yuv=new YuvImage(nv21, ImageFormat.NV21,img.getWidth(),img.getHeight(),null);
-
             yuv.compressToJpeg(new Rect(0,0,img.getWidth(),img.getHeight()),100,out);
-
         } catch (FileNotFoundException e) {
         Log.d("File not found","LOL");
         } catch (IOException e) {
@@ -272,23 +266,61 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     }
 
-    public void SaveYUVImage(Image img) throws Exception {
-        try {
-            byte[] data = null;
-            int format =0;
-            int width = 640;
-            int height = 480;
-            //YuvImage image = new YuvImage(data, format, width, height, null);
-            //String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    public Bitmap convertYuvImageToRgb(YuvImage yuvImage, int width, int height, int downSample) {
+        //downSample通常是1-4之間 壓縮圖檔
+        Bitmap rgbImage;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        yuvImage.compressToJpeg(new Rect(0, 0, width, height), 0, out);
+        byte[] imageBytes = out.toByteArray();
 
-            //File file = new File(imageStorageDir.getPath() + File.separator + "IMG_" + timeStamp + ".jpeg");
-            //FileOutputStream fileOut = new FileOutputStream(file);
-            //image.compressToJpeg(new Rect(0, 0, image.getWidth(), image.getHeight()), 90,
-             //       fileOut);
-        } catch (Exception e) {
+        BitmapFactory.Options opt;
+        opt = new BitmapFactory.Options();
+
+        opt.inSampleSize = downSample;
+
+        // get image and rotate it so (0,0) is in the bottom left
+        Bitmap tmpImage;
+        Matrix matrix = new Matrix();
+        matrix.postRotate(90); // to rotate the camera images so (0,0) is in the bottom left
+        tmpImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, opt);
+        rgbImage=Bitmap.createBitmap(tmpImage , 0, 0, tmpImage.getWidth(), tmpImage.getHeight(), matrix, true);
+
+        return rgbImage;
+    }
+
+    public YuvImage transImage(Image img) {
+        File root = getExternalFilesDir(null).getAbsoluteFile();
+        File path = new File(root.getAbsolutePath() + "/AR");
+        if (path.exists() == false) {
+            path.mkdir();
+        }
+        File imgFile = new File(path, String.format("AR_%d.jpg", img.getTimestamp()));
+        try (FileOutputStream out = new FileOutputStream(imgFile)) {
+            byte[] nv21;
+            ByteBuffer yBuffer = img.getPlanes()[0].getBuffer();
+            ByteBuffer uBuffer = img.getPlanes()[1].getBuffer();
+            ByteBuffer vBuffer = img.getPlanes()[2].getBuffer();
+            //此方法返回此緩衝區中剩餘的元素數 .remaining()
+            int ySize = yBuffer.remaining();
+            int uSize = uBuffer.remaining();
+            int vSize = vBuffer.remaining();
+            nv21 = new byte[ySize + uSize + vSize];
+            //U and V are swapped
+            yBuffer.get(nv21, 0, ySize);
+            vBuffer.get(nv21, ySize, vSize);
+            uBuffer.get(nv21, ySize + vSize, uSize);
+            YuvImage yuv = new YuvImage(nv21, ImageFormat.NV21, img.getWidth(), img.getHeight(), null);
+//            yuv.compressToJpeg(new Rect(0, 0, img.getWidth(), img.getHeight()), 100, out);
+            return yuv;
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
+
 
     public static int[] YUVtoRGB(float y, float u, float v){
         int[] rgb = new int[3];
