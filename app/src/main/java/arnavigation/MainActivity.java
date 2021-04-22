@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
@@ -58,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private String APARTMENT30 = "apartment18_DB";
     private String PACKENHAMHOUSE = "packenhamHouse_DB";
     private String FIREEXIT = "fireExit_DB";
+    private TextView text;
 
 
     @Override
@@ -156,8 +158,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 
         photo.setOnClickListener(view->{
-            getCamera();
+            try {
+                getCamera();
+            } catch (NotYetAvailableException e) {
+                e.printStackTrace();
+            }
         });
+
+
     }
 
     private void showToast(String s) {
@@ -209,12 +217,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     }
 
-    public void getCamera(){
+    public void getCamera() throws NotYetAvailableException {
         String tag = "ArCore";
         String msg = "Not Yet";
         Frame frame= arFragment.getArSceneView().getArFrame();
         Camera camera = frame.getCamera();
-
+        //showToast("tx"+camera.getPose().tx()+"ty"+camera.getPose().ty()+"tz"+camera.getPose().tz());
         try  {
             Image image = frame.acquireCameraImage();
             Log.d(image.getHeight()+"-->height ",image.getWidth()+"-->width ");
@@ -222,9 +230,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             //frame.getImageMetadata().getByteArray()
             WriteImageToSD(image);
-            Bitmap RGB = convertYuvImageToRgb(yuv,image.getHeight(),image.getWidth(),1);
+            //Bitmap RGB = convertYuvImageToRgb(yuv,image.getHeight(),image.getWidth(),1);
 
-            Log.d("save image",""+RGB.getHeight()+RGB.getWidth());
+            //Log.d("save image",""+RGB.getHeight()+RGB.getWidth());
         }
         catch (NotYetAvailableException e)
         {
