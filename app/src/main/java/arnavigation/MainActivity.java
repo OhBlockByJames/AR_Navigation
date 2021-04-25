@@ -109,6 +109,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
 
+            //add
+            try {
+                onSceneUpdate(frameTime);
+            } catch (NotYetAvailableException e) {
+               Log.d("catch","frametime error");
+            }
+
             if (appAnchorState != AppAnchorState.HOSTING)
                 return;
             Anchor.CloudAnchorState cloudAnchorState = anchor.getCloudAnchorState();
@@ -252,11 +259,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             YuvImage yuv = transImage(image);
             Log.d(yuv.getHeight()+"Tester",yuv.getWidth()+"");
 
+            //add 0426
+            final byte[] pixels = NV21toJPEG(YUV_420_888toNV21(image), image.getWidth(), image.getHeight());
+            Log.d("pixel length",pixels.length+"");
+
             //frame.getImageMetadata().getByteArray()
             //WriteImageToSD(image);
-            Bitmap RGB = convertYuvImageToRgb(yuv,image.getHeight(),image.getWidth(),4);
 
-            Log.d("save image",""+RGB.getHeight()+RGB.getWidth());
+            //0426 多了image.getHeight()-1
+            //Bitmap RGB = convertYuvImageToRgb(yuv,image.getHeight()-1,image.getWidth()-1,1);
+
+            //Log.d("save image",""+RGB.getHeight()+RGB.getWidth());
+            image.close();
         }
         catch (NotYetAvailableException e)
         {
@@ -299,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     }
 
-    public Bitmap convertYuvImageToRgb(YuvImage yuvImage, int width, int height, int downSample) {
+    public Bitmap convertYuvImageToRgb(YuvImage yuvImage, int width, int height, int downSample)throws IllegalArgumentException {
         //downSample通常是1-4之間 壓縮圖檔
         Bitmap rgbImage;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
