@@ -25,6 +25,7 @@ import com.google.ar.core.Frame;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
@@ -404,5 +405,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         uBuffer.get(nv21, ySize + vSize, uSize);
 
         return nv21;
+    }
+
+    private void onSceneUpdate(FrameTime frameTime) throws NotYetAvailableException {
+        try {
+            Frame currentFrame = arFragment.getArSceneView().getArFrame();
+            Image currentImage = currentFrame.acquireCameraImage();
+            int imageFormat = currentImage.getFormat();
+            if (imageFormat == ImageFormat.YUV_420_888) {
+                Log.d("ImageFormat", "Image format is YUV_420_888");
+            }
+        }catch (NotYetAvailableException E){
+        Log.d("Failed","Photo");
+        }
     }
 }
