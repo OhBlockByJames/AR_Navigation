@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Frame;
+import com.google.ar.core.PointCloud;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.math.Quaternion;
@@ -30,12 +31,15 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.TransformableNode;
 import com.ustglobal.arcloudanchors.R;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -128,6 +132,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 showToast("Anchor hosted successfully. Anchor Id: " + anchorId);
             }
+
+            //add 0425
 
         });
 
@@ -222,17 +228,34 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         String msg = "Not Yet";
         Frame frame= arFragment.getArSceneView().getArFrame();
         Camera camera = frame.getCamera();
+        PointCloud point = frame.acquirePointCloud();
+        FloatBuffer buf = point.getPoints();
+        try {
+//            for(int i =0;i<=buf.array().length;i++){
+//                Log.v(i+" ","buffertest"+buf.get(i));
+//            }
+            Log.v("buff",""+buf.get(0)+"next"+buf.get(1));
+        }
+        catch(IndexOutOfBoundsException e){
+            Log.v("ARRAY","out of bound");
+        }
+        catch(UnsupportedOperationException e){
+           Log.v("BUFFER","FAILURE");
+        }
+
+
         //showToast("tx"+camera.getPose().tx()+"ty"+camera.getPose().ty()+"tz"+camera.getPose().tz());
         try  {
             Image image = frame.acquireCameraImage();
             Log.d(image.getHeight()+"-->height ",image.getWidth()+"-->width ");
             YuvImage yuv = transImage(image);
+            Log.d(yuv.getHeight()+"Tester",yuv.getWidth()+"");
 
             //frame.getImageMetadata().getByteArray()
-            WriteImageToSD(image);
-            //Bitmap RGB = convertYuvImageToRgb(yuv,image.getHeight(),image.getWidth(),1);
+            //WriteImageToSD(image);
+            Bitmap RGB = convertYuvImageToRgb(yuv,image.getHeight(),image.getWidth(),4);
 
-            //Log.d("save image",""+RGB.getHeight()+RGB.getWidth());
+            Log.d("save image",""+RGB.getHeight()+RGB.getWidth());
         }
         catch (NotYetAvailableException e)
         {
@@ -244,6 +267,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         File root=getExternalFilesDir(null).getAbsoluteFile();
         File path=new File(root.getAbsolutePath()+"/AR");
+
         if(path.exists()==false)
         {
             path.mkdir();
@@ -343,5 +367,42 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         rgb[2] = (int)b;
 
         return rgb;
+    }
+
+    private static byte[] NV21toJPEG(byte[] nv21, int width, int height) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        YuvImage yuv = new YuvImage(nv21, ImageFormat.NV21, width, height, null);
+        yuv.compressToJpeg(new Rect(0, 0, width, height), 100, out);
+        return out.toByteArray();
+    }
+
+    public static void WriteImageInformation(Image image, String path) throws IOException {
+        byte[] data = null;
+        data = NV21toJPEG(YUV_420_888toNV21(image),
+                image.getWidth(), image.getHeight());
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(path));
+        bos.write(data);
+        bos.flush();
+        bos.close();
+    }
+
+    private static byte[] YUV_420_888toNV21(Image image) {
+        byte[] nv21;
+        ByteBuffer yBuffer = image.getPlanes()[0].getBuffer();
+        ByteBuffer uBuffer = image.getPlanes()[1].getBuffer();
+        ByteBuffer vBuffer = image.getPlanes()[2].getBuffer();
+
+        int ySize = yBuffer.remaining();
+        int uSize = uBuffer.remaining();
+        int vSize = vBuffer.remaining();
+
+        nv21 = new byte[ySize + uSize + vSize];
+
+        //U and V are swapped
+        yBuffer.get(nv21, 0, ySize);
+        vBuffer.get(nv21, ySize, vSize);
+        uBuffer.get(nv21, ySize + vSize, uSize);
+
+        return nv21;
     }
 }
