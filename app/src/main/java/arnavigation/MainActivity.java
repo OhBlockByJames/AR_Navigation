@@ -175,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             try {
                 getCamera();
             } catch (NotYetAvailableException e) {
-                e.printStackTrace();
+                Log.d("none","none");
             }
         });
 
@@ -235,29 +235,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         String tag = "ArCore";
         String msg = "Not Yet";
         Frame frame= arFragment.getArSceneView().getArFrame();
-        Camera camera = frame.getCamera();
-        PointCloud point = frame.acquirePointCloud();
-        FloatBuffer buf = point.getPoints();
-        try {
-//            for(int i =0;i<=buf.array().length;i++){
-//                Log.v(i+" ","buffertest"+buf.get(i));
-//            }
-            Log.v("buff",""+buf.get(0)+"next"+buf.get(1));
-        }
-        catch(IndexOutOfBoundsException e){
-            Log.v("ARRAY","out of bound");
-        }
-        catch(UnsupportedOperationException e){
-           Log.v("BUFFER","FAILURE");
-        }
+//        Camera camera = frame.getCamera();
+        //PointCloud point = frame.acquirePointCloud();
+        //FloatBuffer buf = point.getPoints();
+//        try {
+////            for(int i =0;i<=buf.array().length;i++){
+////                Log.v(i+" ","buffertest"+buf.get(i));
+////            }
+//            Log.v("buff",""+buf.get(0)+"next"+buf.get(1));
+//        }
+//        catch(IndexOutOfBoundsException e){
+//            Log.v("ARRAY","out of bound");
+//        }
+//        catch(UnsupportedOperationException e){
+//           Log.v("BUFFER","FAILURE");
+//        }
 
 
         //showToast("tx"+camera.getPose().tx()+"ty"+camera.getPose().ty()+"tz"+camera.getPose().tz());
         try  {
             Image image = frame.acquireCameraImage();
+
             Log.d(image.getHeight()+"-->height ",image.getWidth()+"-->width ");
             YuvImage yuv = transImage(image);
-            Log.d(yuv.getHeight()+"Tester",yuv.getWidth()+"");
+            Log.d("test YUV"+yuv.getHeight(),yuv.getWidth()+"");
 
             //add 0426
             final byte[] pixels = NV21toJPEG(YUV_420_888toNV21(image), image.getWidth(), image.getHeight());
@@ -313,8 +314,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     }
 
-    public Bitmap convertYuvImageToRgb(YuvImage yuvImage, int width, int height, int downSample)throws IllegalArgumentException {
+    public Bitmap convertYuvImageToRgb(YuvImage yuvImage, int width, int height, int downSample){
         //downSample通常是1-4之間 壓縮圖檔
+        try{
         Bitmap rgbImage;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         yuvImage.compressToJpeg(new Rect(0, 0, width, height), 0, out);
@@ -332,7 +334,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         tmpImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, opt);
         rgbImage=Bitmap.createBitmap(tmpImage , 0, 0, tmpImage.getWidth(), tmpImage.getHeight(), matrix, true);
 
-        return rgbImage;
+        return rgbImage;}
+        catch (IllegalArgumentException e){
+            Log.d("Bitmap","illegal");
+            return null;
+
+        }
     }
 
     public YuvImage transImage(Image img) {
@@ -370,6 +377,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 
     public static int[] YUVtoRGB(float y, float u, float v){
+        //byte buffer值域0-255 method值域0-1
         int[] rgb = new int[3];
         float r,g,b;
 
