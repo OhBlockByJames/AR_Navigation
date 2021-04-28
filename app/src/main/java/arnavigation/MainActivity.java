@@ -3,6 +3,7 @@ package arnavigation;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
@@ -110,11 +111,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
 
             //add
-            try {
-                onSceneUpdate(frameTime);
-            } catch (NotYetAvailableException e) {
-               Log.d("catch","frametime error");
-            }
+//            try {
+//                onSceneUpdate(frameTime);
+//            } catch (NotYetAvailableException e) {
+//               Log.d("catch","frametime error");
+//            }
 
             if (appAnchorState != AppAnchorState.HOSTING)
                 return;
@@ -173,9 +174,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         photo.setOnClickListener(view->{
             try {
-                getCamera();
+                tester();
+                //getCamera();
             } catch (NotYetAvailableException e) {
-                Log.d("none","none");
+                Log.d("none","tester");
             }
         });
 
@@ -440,5 +442,37 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }catch (NotYetAvailableException E){
         Log.d("Failed","Photo");
         }
+    }
+
+    public void tester()  throws NotYetAvailableException  {
+        String TAG ="AR CORE";
+        Frame frame = arFragment.getArSceneView().getArFrame();
+        Image img = frame.acquireCameraImage();
+        ByteBuffer ib = ByteBuffer.allocate(img.getHeight() * img.getWidth() * 2);
+        ByteBuffer y = img.getPlanes()[0].getBuffer();
+        ByteBuffer cr = img.getPlanes()[1].getBuffer();
+        ByteBuffer cb = img.getPlanes()[2].getBuffer();
+        ib.put(y);
+        ib.put(cb);
+        ib.put(cr);
+        YuvImage yuvImage = new YuvImage(ib.array(),
+                ImageFormat.NV21, img.getWidth(), img.getHeight(), null);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        yuvImage.compressToJpeg(new Rect(0, 0,
+                img.getWidth(), img.getHeight()), 50, out);
+        byte[] imageBytes = out.toByteArray();
+        Log.d(TAG, "tester: "+out.getClass());
+        //byte*matrix
+        Bitmap bm = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        //New RGB image
+        Bitmap bm2=convertYuvImageToRgb(yuvImage,img.getWidth(),img.getHeight(),1);
+        //
+        DrawBitMap.bm = bm2;
+
+        //add
+        //img.close();
+        Log.d(TAG, "tester: "+bm.getWidth()+bm.getHeight());
+        Intent intent=new Intent(this,DrawImage.class);
+        startActivity(intent);
     }
 }

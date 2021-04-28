@@ -16,6 +16,7 @@
         android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name="arnavigation.DrawImage"></activity>
         <activity
             android:name="arnavigation.MainActivity"
             android:label="@string/title_activity_laucher_activiy"
